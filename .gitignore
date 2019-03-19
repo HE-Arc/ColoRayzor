@@ -1,5 +1,8 @@
+.vscode/
+
 # Directory with data images
 data/
+data
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
