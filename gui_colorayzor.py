@@ -2,6 +2,8 @@
 import tkinter as tk
 from PIL import ImageTk, Image
 import cv2
+import numpy as np
+from keras.models import load_model
 
 # Icon made by Freepik from www.flaticon.com 
 
@@ -40,6 +42,9 @@ label_info_reconstructed['text'] = "Re-colored"
 # Capture from camera
 cap = cv2.VideoCapture(0)
 
+# Keras model
+model = load_model('coloRayzor.h5')
+
 # function for video streaming
 def video_stream():
     _, frame = cap.read()
@@ -63,7 +68,9 @@ def video_stream():
 
     # RECONSTRUCTED
     #TODO
-    label_reconstructed.imgtk = imgtk
+    image_scaled_bw = cv2.resize(image_bw, (128, 128))
+    image_reconstructed = np.uint8(model.predict(image_reconstructed)[0])
+    label_reconstructed.imgtk = image_reconstructed
     label_reconstructed.configure(image=imgtk)
 
 def crop_square(img):
