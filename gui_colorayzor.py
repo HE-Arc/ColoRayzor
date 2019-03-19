@@ -64,14 +64,15 @@ def video_stream():
     imgtk2 = ImageTk.PhotoImage(image=img2)
     label_bw.imgtk = imgtk2
     label_bw.configure(image=imgtk2)
-    label_bw.after(10, video_stream) 
+    label_bw.after(50, video_stream) 
 
     # RECONSTRUCTED
-    #TODO
     image_scaled_bw = cv2.resize(image_bw, (128, 128))
-    image_reconstructed = np.uint8(model.predict(image_reconstructed)[0])
-    label_reconstructed.imgtk = image_reconstructed
-    label_reconstructed.configure(image=imgtk)
+    image_reconstructed = np.uint8(model.predict(image_scaled_bw.reshape(1,128,128,1))[0])
+    img3 = Image.fromarray(cv2.resize(image_reconstructed, (400, 400)))
+    imgtk3 = ImageTk.PhotoImage(image=img3)
+    label_reconstructed.imgtk = imgtk3
+    label_reconstructed.configure(image=imgtk3)
 
 def crop_square(img):
     w = img.shape[0]
