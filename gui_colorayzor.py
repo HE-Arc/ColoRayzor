@@ -2,8 +2,37 @@
 import tkinter as tk
 from PIL import ImageTk, Image
 import cv2
+import configparser
+import os
 
 # Icon made by Freepik from www.flaticon.com 
+
+conf = configparser.ConfigParser()
+if not os.path.isfile('config.ini'):
+    conf['VIDEO'] = {
+    'VIDEO_FEED_SIZE' : 400,
+    'VIDEO_PROCESS_SIZE' : 128,
+    'VIDEO_CAPTURE_RATE' : 100,
+    }
+
+    conf['ML'] = { 
+    'MODEL_NAME' : "coloRayzor.h5",
+    }
+    
+    with open('config.ini', 'w') as configfile:
+        conf.write(configfile)
+else:
+    conf.read('config.ini')
+
+try:
+    VIDEO_FEED_SIZE = int(conf['VIDEO']['VIDEO_FEED_SIZE'])
+    VIDEO_PROCESS_SIZE = int(conf['VIDEO']['VIDEO_PROCESS_SIZE'])
+    VIDEO_CAPTURE_RATE = int(conf['VIDEO']['VIDEO_CAPTURE_RATE'])
+    ML_MODEL_NAME = str(conf['ML']['MODEL_NAME'])
+except:
+    print("An error occured while reading the config file.")
+    exit()
+
 
 window = tk.Tk()
 window.title("ColoRayzor")
@@ -40,6 +69,9 @@ label_info_reconstructed['text'] = "Re-colored"
 # Capture from camera
 cap = cv2.VideoCapture(0)
 
+# Keras model
+model = load_model(ML_MODEL_NAME)
+
 # function for video streaming
 def video_stream():
     _, frame = cap.read()
@@ -59,12 +91,15 @@ def video_stream():
     imgtk2 = ImageTk.PhotoImage(image=img2)
     label_bw.imgtk = imgtk2
     label_bw.configure(image=imgtk2)
-    label_bw.after(10, video_stream) 
+    label_bw.after(VIDEO_CAPTURE_RATE, video_stream) 
 
     # RECONSTRUCTED
-    #TODO
-    label_reconstructed.imgtk = imgtk
-    label_reconstructed.configure(image=imgtk)
+    image_scaled_bw = cv2.resize(image_bw, (VIDEO_PROCESS_SIZE, VIDEO_PROCESS_SIZE))
+    image_reconstructed = np.uint8(model.predict(image_scaled_bw.reshape(1,VIDEO_PROCESS_SIZE,VIDEO_PROCESS_SIZE,1)/255)[0]*255)
+    img3 = Image.fromarray(cv2.resize(image_reconstructed, (VIDEO_FEED_SIZE, VIDEO_FEED_SIZE)))
+    imgtk3 = ImageTk.PhotoImage(image=img3)
+    label_reconstructed.imgtk = imgtk3
+    label_reconstructed.configure(image=imgtk3)
 
 def crop_square(img):
     w = img.shape[0]
@@ -82,8 +117,8 @@ def crop_square(img):
     else:
         new_img = img[ offset//2 : big_size-(offset//2) , : ]
 
-    new_img = cv2.resize(new_img, (128, 128)) #Lose precision
-    return cv2.resize(new_img, (400, 400))
+    new_img = cv2.resize(new_img, (VIDEO_PROCESS_SIZE, VIDEO_PROCESS_SIZE)) #Lose precision
+    return cv2.resize(new_img, (VIDEO_FEED_SIZE, VIDEO_FEED_SIZE))
 
 video_stream()
 window.mainloop()
