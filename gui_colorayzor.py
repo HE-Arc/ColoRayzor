@@ -4,6 +4,8 @@ from PIL import ImageTk, Image
 import cv2
 import configparser
 import os
+import numpy as np
+from keras.models import load_model
 
 # Icon made by Freepik from www.flaticon.com 
 
