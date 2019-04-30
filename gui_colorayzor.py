@@ -6,7 +6,7 @@ import configparser
 import os
 import numpy as np
 
-MODE = "DEBUG"
+MODE = "Not DEBUG"
 PAUSE_FEED = False
 WINDOW_TITLE = "ColoRayzor"
 
@@ -20,7 +20,7 @@ if not os.path.isfile('config.ini'):
     conf['VIDEO'] = {
     'VIDEO_FEED_SIZE' : 400,
     'VIDEO_PROCESS_SIZE' : 224,
-    'VIDEO_CAPTURE_RATE' : 100,
+    'VIDEO_CAPTURE_RATE' : 200,
     }
     
     with open('config.ini', 'w') as configfile:
@@ -45,7 +45,7 @@ try:
         os.mkdir(path)
         
     files = [filename for filename in os.listdir(path) if filename.startswith('model_')]
-    ML_MODEL_NAME = files[0]
+    ML_MODEL_NAME = path + files[0]
 
     if not files:
         raise Exception
@@ -68,7 +68,7 @@ def radio_changed():
     app.config(cursor="wait")
     PAUSE_FEED = True
     if MODE is not "DEBUG":
-        model = load_model(files[selected_int.get()])
+        model = load_model("models/" + files[selected_int.get()])
     PAUSE_FEED = False
     window.title(WINDOW_TITLE + " - " + files[selected_int.get()] + WINDOW_TITLE_CONFIG)
     window.config(cursor="")
