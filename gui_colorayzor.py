@@ -5,7 +5,13 @@ import cv2
 import configparser
 import os
 import numpy as np
-from keras.models import load_model
+
+MODE = "DEBUG"
+PAUSE_FEED = False
+WINDOW_TITLE = "ColoRayzor"
+
+if MODE is not "DEBUG":
+    from keras.models import load_model
 
 # Icon made by Freepik from www.flaticon.com 
 
@@ -15,10 +21,6 @@ if not os.path.isfile('config.ini'):
     'VIDEO_FEED_SIZE' : 400,
     'VIDEO_PROCESS_SIZE' : 224,
     'VIDEO_CAPTURE_RATE' : 100,
-    }
-
-    conf['ML'] = { 
-    'MODEL_NAME' : "coloRayzor.h5",
     }
     
     with open('config.ini', 'w') as configfile:
@@ -30,19 +32,57 @@ try:
     VIDEO_FEED_SIZE = int(conf['VIDEO']['VIDEO_FEED_SIZE'])
     VIDEO_PROCESS_SIZE = int(conf['VIDEO']['VIDEO_PROCESS_SIZE'])
     VIDEO_CAPTURE_RATE = int(conf['VIDEO']['VIDEO_CAPTURE_RATE'])
-    ML_MODEL_NAME = str(conf['ML']['MODEL_NAME'])
+
+
 except:
     print("An error occured while reading the config file.")
     exit()
+WINDOW_TITLE_CONFIG = "  @" + str(1000//VIDEO_CAPTURE_RATE) + " fps  -  " + str(VIDEO_FEED_SIZE) + "x" + str(VIDEO_FEED_SIZE) + " (feed) --> " + str(VIDEO_PROCESS_SIZE) + "x" + str(VIDEO_PROCESS_SIZE) + " (model)"
 
+try:
+    path = "./models/"
+    if not os.path.exists(path):
+        os.mkdir(path)
+        
+    files = [filename for filename in os.listdir(path) if filename.startswith('model_')]
+    ML_MODEL_NAME = files[0]
+
+    if not files:
+        raise Exception
+except:
+    print("An error occured while loading models. No folder or no models discovered")
+    exit()
 
 window = tk.Tk()
-window.title("ColoRayzor")
+window.title(WINDOW_TITLE + " - " + ML_MODEL_NAME + WINDOW_TITLE_CONFIG)
 window.bind('<Escape>', lambda e: window.quit())
 window.resizable(False, False)
 window.iconbitmap('icon_color.ico')
 app = tk.Frame(window)
 app.grid()
+
+
+# RADIO BUTTON
+def radio_changed():
+    #Change cursor, disable the relaunch uf the video_stream, load model and return everything to running mode
+    app.config(cursor="wait")
+    PAUSE_FEED = True
+    if MODE is not "DEBUG":
+        model = load_model(files[selected_int.get()])
+    PAUSE_FEED = False
+    window.title(WINDOW_TITLE + " - " + files[selected_int.get()] + WINDOW_TITLE_CONFIG)
+    window.config(cursor="")
+    video_stream()
+
+menu = tk.Menu(window)
+model_menu = tk.Menu(menu)
+
+selected_int = tk.IntVar()
+for i, model in enumerate(files):
+    model_menu.add_radiobutton(label=model, variable=selected_int, value=i, command=radio_changed)
+
+menu.add_cascade(label="Model", menu=model_menu)
+window.config(menu=menu)
 
 # CAMERA FEED
 label_camera = tk.Label(app)
@@ -72,7 +112,8 @@ label_info_reconstructed['text'] = "Re-colored"
 cap = cv2.VideoCapture(0)
 
 # Keras model
-model = load_model(ML_MODEL_NAME)
+if MODE is not "DEBUG":
+    model = load_model(ML_MODEL_NAME)
 
 # function for video streaming
 def video_stream():
@@ -93,16 +134,19 @@ def video_stream():
     imgtk2 = ImageTk.PhotoImage(image=img2)
     label_bw.imgtk = imgtk2
     label_bw.configure(image=imgtk2)
-    label_bw.after(VIDEO_CAPTURE_RATE, video_stream) 
+    if PAUSE_FEED is False:
+        label_bw.after(VIDEO_CAPTURE_RATE, video_stream) 
 
     # RECONSTRUCTED
-    image_scaled_bw = cv2.resize(image_bw, (VIDEO_PROCESS_SIZE, VIDEO_PROCESS_SIZE))
-    image_reconstructed = np.uint8(model.predict(image_scaled_bw.reshape(1,VIDEO_PROCESS_SIZE,VIDEO_PROCESS_SIZE,1)/255)[0]*255)
-    img3 = Image.fromarray(cv2.resize(image_reconstructed, (VIDEO_FEED_SIZE, VIDEO_FEED_SIZE)))
-    imgtk3 = ImageTk.PhotoImage(image=img3)
-    label_reconstructed.imgtk = imgtk3
-    label_reconstructed.configure(image=imgtk3)
+    if MODE is not "DEBUG":
+        image_scaled_bw = cv2.resize(image_bw, (VIDEO_PROCESS_SIZE, VIDEO_PROCESS_SIZE))
+        image_reconstructed = np.uint8(model.predict(image_scaled_bw.reshape(1,VIDEO_PROCESS_SIZE,VIDEO_PROCESS_SIZE,1)/255)[0]*255)
+        img3 = Image.fromarray(cv2.resize(image_reconstructed, (VIDEO_FEED_SIZE, VIDEO_FEED_SIZE)))
+        imgtk3 = ImageTk.PhotoImage(image=img3)
+        label_reconstructed.imgtk = imgtk3
+        label_reconstructed.configure(image=imgtk3)
 
+# function for the resizing of the feed
 def crop_square(img):
     w = img.shape[0]
     h = img.shape[1]
@@ -121,6 +165,7 @@ def crop_square(img):
 
     new_img = cv2.resize(new_img, (VIDEO_PROCESS_SIZE, VIDEO_PROCESS_SIZE)) #Lose precision
     return cv2.resize(new_img, (VIDEO_FEED_SIZE, VIDEO_FEED_SIZE))
+
 
 video_stream()
 window.mainloop()
