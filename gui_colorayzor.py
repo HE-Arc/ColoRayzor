@@ -5,6 +5,7 @@ import cv2
 import configparser
 import os
 import numpy as np
+import sys
 
 MODE = "Not DEBUG"
 PAUSE_FEED = False
@@ -45,7 +46,10 @@ try:
         os.mkdir(path)
         
     files = [filename for filename in os.listdir(path) if filename.startswith('model_')]
-    ML_MODEL_NAME = path + files[0]
+    if len(sys.argv)==1:
+        ML_MODEL_NAME = path + files[0]
+    else:
+        ML_MODEL_NAME = path + files[int(sys.argv[1])]
 
     if not files:
         raise Exception
@@ -57,7 +61,7 @@ window = tk.Tk()
 window.title(WINDOW_TITLE + " - " + ML_MODEL_NAME + WINDOW_TITLE_CONFIG)
 window.bind('<Escape>', lambda e: window.quit())
 window.resizable(False, False)
-window.iconbitmap('icon_color.ico')
+#window.iconbitmap('icon_color.ico')
 app = tk.Frame(window)
 app.grid()
 
@@ -65,7 +69,7 @@ app.grid()
 # RADIO BUTTON
 def radio_changed():
     #Change cursor, disable the relaunch uf the video_stream, load model and return everything to running mode
-    app.config(cursor="wait")
+    #app.config(cursor="wait")
     PAUSE_FEED = True
     if MODE is not "DEBUG":
         model = load_model("models/" + files[selected_int.get()])
