@@ -51,6 +51,9 @@ try:
     else:
         ML_MODEL_NAME = path + files[int(sys.argv[1])]
 
+    if len(sys.argv)==3:
+        VIDEO_PROCESS_SIZE=int(sys.argv[2])
+
     if not files:
         raise Exception
 except:
