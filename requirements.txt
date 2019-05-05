@@ -1,0 +1,8 @@
+jupyterlab
+ipywidgets
+tqdm
+keras_tqdm
+opencv-python
+tensorflow
+keras
+matplotlib
